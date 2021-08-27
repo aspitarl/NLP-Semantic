@@ -26,57 +26,45 @@ df
 #%%
 
 from nlp_utils.citation import build_citation_community
-df_com = build_citation_community(df, con, n_iter=2, frac_keep_factor=0.5, n_initial_trim=200)
+df_com = build_citation_community(df, con, n_iter=3, frac_keep_factor=0.5, n_initial_trim=200)
 
 #%%
-from nlp_utils.text_process import TextNormalizer
-
-# The text we will analyze is words in both the title and abstract concatenated. 
 docs = df_com['title'] + ' ' + df_com['paperAbstract']
 texts = docs.apply(str.split)
-
-text_normalizer = TextNormalizer()
 
 gen_lit_tw = pd.read_csv('data/gen_literature_top_words.csv',index_col=0)
 gen_lit_remove = gen_lit_tw[0:130].index.values
 
-text_normalizer.post_stopwords = gen_lit_remove
-
-texts_out = list(text_normalizer.transform(texts))
 
 #%%
 
+from sklearn.pipeline import Pipeline, FeatureUnion
+from nlp_utils.text_process import TextNormalizer
 from nlp_utils.gensim_utils import Gensim_Bigram_Transformer
-
-fixed_bigrams = ['heat_pump', 'pump_thermal'] #TODO: perhaps didn't have to do this, thought it was pumped_thermal before. 
-lda_kwargs = {'threshold':20, 'min_count':10}
-
-# texts_bigram = gensim_bigram(texts_out, lda_kwargs, fixed_bigrams)
-
-bigram_trans = Gensim_Bigram_Transformer()
-
-texts_bigram = bigram_trans.fit(texts_out, lda_kwargs, fixed_bigrams).transform(texts_out)
-docs_bigram = [" ".join(t) for t in texts_bigram]
-
 from sklearn.feature_extraction.text import CountVectorizer
-vectorizer = CountVectorizer(max_features=None, min_df=2, max_df = 0.9)
-X = vectorizer.fit_transform(docs_bigram)
-feature_names = vectorizer.get_feature_names()
-
-
-# %%
 from corextopic import corextopic as ct
 from nlp_utils import corex_utils
 
-# topic_model = ct.Corex(n_hidden=50)  # Define the number of latent (hidden) topics to use.
-# topic_model.fit(X, words=feature_names, docs=docs.index, anchors=None, anchor_strength=5)
+fixed_bigrams = ['heat_pump', 'pump_thermal'] #TODO: perhaps didn't have to do this, thought it was pumped_thermal before. 
+bigram_kwargs = {'threshold':20, 'min_count':10}
 
-topic_model = ct.Corex(n_hidden=30)  # Define the number of latent (hidden) topics to use.
-topic_model.fit(X, words=feature_names, docs=docs.index, anchors=['compress_air', 'pump_thermal', 'lithium_ion'], anchor_strength=5)
+corex_anchors = ['compress_air', 'pump_thermal', 'lithium_ion']
 
+pipeline = Pipeline([
+    ('text_norm', TextNormalizer(post_stopwords=gen_lit_remove)),
+    ('bigram', Gensim_Bigram_Transformer(bigram_kwargs=bigram_kwargs, fixed_bigrams=fixed_bigrams)),
+    ('vectorizer', CountVectorizer(max_features=None, min_df=2, max_df = 0.9, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
+    ('corex', ct.Corex(n_hidden=30, anchors = corex_anchors, anchor_strength=5))
+])
+
+X = pipeline.fit_transform(texts)
+
+feature_names = pipeline['vectorizer'].get_feature_names()
+topic_model = pipeline['corex']
+topic_model.set_words(feature_names)
+topic_model.set_docs(docs.index)
 
 topic_names = ['topic_' + str(i) for i in range(topic_model.n_hidden)]
-
 s_topic_words = corex_utils.get_s_topic_words(topic_model, topic_names)
 s_topic_words
 
