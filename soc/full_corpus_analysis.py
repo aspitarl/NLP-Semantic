@@ -72,18 +72,18 @@ df_keep
 
 #%%
 
+from nlp_utils.text_process import TextNormalizer
 
-from nlp_utils.text_process import text_processing_pipeline
 from nlp_utils.text_analysis import top_words
-import gensim
-import string
 
 df_tm = df
 
 # The text we will analyze is words in both the title and abstract concatenated. 
 docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
+texts = docs.apply(str.split)
 
-texts_out = text_processing_pipeline(docs, debug=False)
+text_normalizer = TextNormalizer()
+texts_out = list(text_normalizer.transform(texts))
 
 
 # %%

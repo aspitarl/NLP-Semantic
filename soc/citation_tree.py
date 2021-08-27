@@ -24,9 +24,7 @@ df
 #%%
 
 from nlp_utils.citation import get_citations, build_citation_community
-
-
-df_temp = build_citation_community(df, con, n_iter=3, frac_keep_factor=0.5, n_initial_trim=20000)
+df_temp = build_citation_community(df, con, n_iter=2, frac_keep_factor=0.5, n_initial_trim=200)
 
 #%%
 
@@ -36,12 +34,9 @@ plt.xscale('log')
 
 #%%
 
-
-
 df_temp.groupby('year').apply(
     lambda x: x['outCitations'].apply(len).mean()
 ).plot()
-
 
 #%%
 
@@ -51,9 +46,6 @@ review_papers.value_counts()
 
 #%%
 
-
-
-
 df_review = df_temp.where(review_papers==True).dropna(how='all')
 df_review['outCitations'].apply(len).hist(bins=1000, alpha=0.5)
 df_not_review = df_temp.where(review_papers==False).dropna(how='all')
@@ -61,10 +53,7 @@ df_not_review['outCitations'].apply(len).hist(bins=1000, alpha=0.5 )
 
 plt.yscale('log')
 plt.xscale('log')
-
-
 #%%
-
 
 df_not_review.groupby('year').apply(
     lambda x: x['outCitations'].apply(len).mean()
@@ -79,29 +68,26 @@ df_not_review.groupby('year').apply(
 ).plot()
 
 
-
 #%%
-from nlp_utils.text_process import text_processing_pipeline
-from nlp_utils.text_analysis import top_words
+from nlp_utils.text_process import TextNormalizer
 
 df_tm = df_temp
 
 # The text we will analyze is words in both the title and abstract concatenated. 
 docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
+texts = docs.apply(str.split)
 
-texts_out = text_processing_pipeline(docs, debug=False)
-
-#%%
-from nlp_utils.text_process import stopword_removal
+text_normalizer = TextNormalizer()
 
 gen_lit_tw = pd.read_csv('data/gen_literature_top_words.csv',index_col=0)
 gen_lit_remove = gen_lit_tw[0:130].index.values
 
-texts_out = texts_out.apply(lambda x: stopword_removal(x, gen_lit_remove))
-print(top_words(texts_out,100))
+text_normalizer.post_stopwords = gen_lit_remove
 
+texts_out = list(text_normalizer.transform(texts))
 
 #%%
+
 
 from importlib import reload
 from nlp_utils import gensim_utils
