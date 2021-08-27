@@ -23,7 +23,7 @@ df= load_data_ids(con, ids)
 
 df['year'] = df['year'].astype(float).astype(int) #TODO: move earlier?
 #%%
-
+from nlp_utils.text_process import text_processing_pipeline
 
 # The text we will analyze is words in both the title and abstract concatenated. 
 docs = df['title'] + ' ' + df['abstract']

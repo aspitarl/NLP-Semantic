@@ -83,7 +83,7 @@ df_not_review.groupby('year').apply(
 
 
 #%%
-from nlp_utils.textprocess import text_processing_pipeline
+from nlp_utils.text_process import text_processing_pipeline
 from nlp_utils.text_analysis import top_words
 
 df_tm = df_temp
@@ -94,7 +94,7 @@ docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
 texts_out = text_processing_pipeline(docs, debug=False)
 
 #%%
-from nlp_utils.textprocess import stopword_removal
+from nlp_utils.text_process import stopword_removal
 
 gen_lit_tw = pd.read_csv('data/gen_literature_top_words.csv',index_col=0)
 gen_lit_remove = gen_lit_tw[0:130].index.values

@@ -71,7 +71,7 @@ df_keep
 #%%
 
 
-from nlp_utils.textprocess import text_processing_pipeline
+from nlp_utils.text_process import text_processing_pipeline
 from nlp_utils.text_analysis import top_words
 import gensim
 import string
