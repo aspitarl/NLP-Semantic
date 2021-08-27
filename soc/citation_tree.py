@@ -10,6 +10,8 @@ DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
 db_path = os.path.join(DATASET_DIR, 'soc.db')
 con = sqlite3.connect(db_path)
 
+#%%
+
 all_dois = pd.read_csv('data/tech_doi.csv')
 input_dois = all_dois['general'].dropna()
 
@@ -23,58 +25,14 @@ df
 
 #%%
 
-from nlp_utils.citation import get_citations, build_citation_community
-df_temp = build_citation_community(df, con, n_iter=2, frac_keep_factor=0.5, n_initial_trim=200)
-
-#%%
-
-df_temp['outCitations'].apply(len).hist(bins=100)
-plt.yscale('log')
-plt.xscale('log')
-
-#%%
-
-df_temp.groupby('year').apply(
-    lambda x: x['outCitations'].apply(len).mean()
-).plot()
-
-#%%
-
-#how many papers have the term 'review'
-review_papers = (df_temp['title'] + df_temp['paperAbstract']).str.contains('review')
-review_papers.value_counts()
-
-#%%
-
-df_review = df_temp.where(review_papers==True).dropna(how='all')
-df_review['outCitations'].apply(len).hist(bins=1000, alpha=0.5)
-df_not_review = df_temp.where(review_papers==False).dropna(how='all')
-df_not_review['outCitations'].apply(len).hist(bins=1000, alpha=0.5 )
-
-plt.yscale('log')
-plt.xscale('log')
-#%%
-
-df_not_review.groupby('year').apply(
-    lambda x: x['outCitations'].apply(len).mean()
-).plot()
-
-#%%
-
-df_not_review = df_not_review.where(df_not_review['outCitations'].apply(len) < 100).dropna(how='all')
-
-df_not_review.groupby('year').apply(
-    lambda x: x['outCitations'].apply(len).mean()
-).plot()
-
+from nlp_utils.citation import build_citation_community
+df_com = build_citation_community(df, con, n_iter=2, frac_keep_factor=0.5, n_initial_trim=200)
 
 #%%
 from nlp_utils.text_process import TextNormalizer
 
-df_tm = df_temp
-
 # The text we will analyze is words in both the title and abstract concatenated. 
-docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
+docs = df_com['title'] + ' ' + df_com['paperAbstract']
 texts = docs.apply(str.split)
 
 text_normalizer = TextNormalizer()
@@ -87,11 +45,6 @@ text_normalizer.post_stopwords = gen_lit_remove
 texts_out = list(text_normalizer.transform(texts))
 
 #%%
-
-
-from importlib import reload
-from nlp_utils import gensim_utils
-reload(gensim_utils)
 
 from nlp_utils.gensim_utils import Gensim_Bigram_Transformer
 
@@ -131,9 +84,9 @@ s_topic_words
 
 import nlp_utils.common as nu_common 
 doc_topic_probs = topic_model.p_y_given_x
-df_doc_topic_probs = pd.DataFrame(doc_topic_probs, index=df_tm.index , columns=topic_names)
+df_doc_topic_probs = pd.DataFrame(doc_topic_probs, index=df_com.index , columns=topic_names)
 
-s_year = pd.Series(df_tm['year'], index=df_tm.index)
+s_year = pd.Series(df_com['year'], index=df_com.index)
 
 df_topicsyear = nu_common.calc_topics_year(df_doc_topic_probs, s_year, norm_each_topic=False)
 df_topicsyear.index = df_topicsyear.index.astype(int)
@@ -142,14 +95,12 @@ df_topicsyear = df_topicsyear.sort_index()
 #%%
 from nlp_utils.plot import top_slopes_plot
 
-topic_strs = s_topic_words
-
 year_range_fit = slice(2015,2020)
 year_range_plot = slice(2000,2020)
 
-top_slopes_plot(df_topicsyear.loc[year_range_plot], topic_strs, year_range_fit, n_plots=20)
+top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=20)
 #%%
-top_slopes_plot(df_topicsyear.loc[year_range_plot], topic_strs, year_range_fit, n_plots=10, ascending=True)
+top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=10, ascending=True)
 #%%
 
 topic_num = 15
@@ -161,10 +112,10 @@ print(s_topic_words[topic_str])
 top_docs = topic_model.get_top_docs()[topic_num]
 top_docs
 
-print("-"+"\n-".join(df_tm['title'].loc[[t[0] for t in top_docs]]))
+print("-"+"\n-".join(df_com['title'].loc[[t[0] for t in top_docs]]))
 
 #%%
-
+"""
 ###LDA####
 
 from nlp_utils.gensim_utils import basic_gensim_lda
@@ -181,12 +132,12 @@ id2word, data_words, lda_model = basic_gensim_lda(texts_bigram, lda_kwargs)
 df_topickeywords, doc_topic_probs = gensim_utils.gensim_topic_info(lda_model, data_words, id2word)
 
 df_doc_topic_probs = pd.DataFrame(doc_topic_probs, columns=df_topickeywords.index)
-df_doc_topic_probs.index = df_tm.index.values
+df_doc_topic_probs.index = df_com.index.values
 
 #%%
 
 s_topic_words = df_topickeywords.apply(" ".join, axis=1)
-s_year = pd.Series(df_tm['year'], index=df_tm.index.values)
+s_year = pd.Series(df_com['year'], index=df_com.index.values)
 
 df_topicsyear = nu_common.calc_topics_year(df_doc_topic_probs, s_year, norm_each_topic=False)
 df_topicsyear.index = df_topicsyear.index.astype(int)
@@ -207,8 +158,9 @@ topic = 'topic_44'
 
 top_docs = df_doc_topic_probs[topic].sort_values(ascending=False)
 top_docs = top_docs.index[0:10]
-# df_tm.loc[top_papers[0:10].index]
+# df_com.loc[top_papers[0:10].index]
 
-disp_strs = df_tm['title'] + ' (' + df_tm['year'].astype(str) + ')' 
+disp_strs = df_com['title'] + ' (' + df_com['year'].astype(str) + ')' 
 
 print("-"+"\n-".join(disp_strs.loc[top_docs].values))
+"""
