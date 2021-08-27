@@ -93,14 +93,17 @@ from importlib import reload
 from nlp_utils import gensim_utils
 reload(gensim_utils)
 
-from nlp_utils.gensim_utils import gensim_bigram
+from nlp_utils.gensim_utils import Gensim_Bigram_Transformer
 
 fixed_bigrams = ['heat_pump', 'pump_thermal'] #TODO: perhaps didn't have to do this, thought it was pumped_thermal before. 
 lda_kwargs = {'threshold':20, 'min_count':10}
 
-texts_bigram = gensim_bigram(texts_out, lda_kwargs, fixed_bigrams)
-docs_bigram = [" ".join(t) for t in texts_bigram]
+# texts_bigram = gensim_bigram(texts_out, lda_kwargs, fixed_bigrams)
 
+bigram_trans = Gensim_Bigram_Transformer()
+
+texts_bigram = bigram_trans.fit(texts_out, lda_kwargs, fixed_bigrams).transform(texts_out)
+docs_bigram = [" ".join(t) for t in texts_bigram]
 
 from sklearn.feature_extraction.text import CountVectorizer
 vectorizer = CountVectorizer(max_features=None, min_df=2, max_df = 0.9)
