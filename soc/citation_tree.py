@@ -1,18 +1,16 @@
 #%%
-from io import TextIOWrapper
 import sqlite3
-import nlp_utils
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
 from nlp_utils.fileio import load_df_semantic
 
-
-db_path = r'C:\Users\aspit\Git\MLEF-Energy-Storage\semantic_opencorpus\data\soc.db'
-
+DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
+db_path = os.path.join(DATASET_DIR, 'soc.db')
 con = sqlite3.connect(db_path)
 
-all_dois = pd.read_csv('tech_doi.csv')
+all_dois = pd.read_csv('data/tech_doi.csv')
 input_dois = all_dois['general'].dropna()
 
 df = load_df_semantic(con, input_dois, cust_idx_name='doi')

@@ -1,14 +1,12 @@
 #%%
 
 import sqlite3
+import os
 import pandas as pd
 
-db_path = r'C:\Users\aspit\Git\MLEF-Energy-Storage\s2orc\data\full\db_s2orc.db'
-
+DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
+db_path = os.path.join(DATASET_DIR, 'db_s2orc.db')
 con = sqlite3.connect(db_path)
-
-table_info = con.execute(f'PRAGMA table_info(raw_text);').fetchall()
-columns = [t[1] for t in table_info]
 
 #TODO: I wonder if it might be faster doing first pass to see if there were any of the search terms, then search for each term in that subset.
 

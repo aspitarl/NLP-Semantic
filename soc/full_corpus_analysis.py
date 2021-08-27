@@ -4,16 +4,18 @@
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
-
-db_path = r'C:\Users\aspit\Git\MLEF-Energy-Storage\semantic_opencorpus\data\soc.db'
+DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
+db_path = os.path.join(DATASET_DIR, 'soc.db')
 
 con = sqlite3.connect(db_path)
 cursor = con.cursor()
 
 #%%
 
-cursor.execute("SELECT id from raw_text ORDER BY RANDOM() LIMIT 10000")
+# cursor.execute("SELECT id from raw_text ORDER BY RANDOM() LIMIT 100")
+cursor.execute("SELECT id FROM raw_text LIMIT 10000")
 results = cursor.fetchall()
 
 ids = [t[0] for t in results]

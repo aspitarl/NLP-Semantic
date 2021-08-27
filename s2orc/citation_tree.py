@@ -1,9 +1,10 @@
 #%%
 import sqlite3
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from nlp_utils.fileio import load_df_semantic
+from nlp_utils.fileio import load_df_semantic, get_column_as_list
 
 def get_citation(con, paper_id, field='inbound_citations'):
 
@@ -54,18 +55,13 @@ def gen_citation_tree(con, paper_ids, steps):
 
     return all_results
 
-def get_ids_regex(con, regex):
 
-    ids = con.execute("select \"%{}%\" from indexed_searches".format(regex)).fetchall()
-    ids = [i[0] for i in ids if i[0] != None]
 
-    return ids
-
-db_path = r'C:\Users\aspit\Git\MLEF-Energy-Storage\s2orc\data\full\db_s2orc.db'
-
+DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
+db_path = os.path.join(DATASET_DIR, 'db_s2orc.db')
 con = sqlite3.connect(db_path)
 
-ids = get_ids_regex(con, 'energy storage') 
+ids = get_column_as_list(con, '%energy storage%', 'indexed_searches') 
 
 df = load_df_semantic(con, ids, dataset='s2orc')
 
