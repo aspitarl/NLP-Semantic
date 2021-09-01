@@ -1,7 +1,13 @@
+
+"""
+In this script we see how the overal probability and slope of anchored topics is sensitive to the overall number of topics, i.e. how robust that prediciton is. 
+"""
+
 #%%
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
+import xarray as xr
 import os
 
 from sklearn.pipeline import Pipeline
@@ -42,22 +48,8 @@ gen_lit_remove = gen_lit_tw[0:130].index.values
 #%%
 
 corex_anchors = [['fuel_cel', 'electrolyz'], ['pump_thermal', 'heat_pump'], 'li_ion']
+fixed_bigrams = nu.corex_utils.anchors_to_fixed_bigrams(corex_anchors)
 
-fixed_bigrams = []
-
-for word in corex_anchors:
-    if type(word) == list:
-            fixed_bigrams.extend(word)
-    else:
-        fixed_bigrams.append(word)
-
-fixed_bigrams = [w for w in fixed_bigrams if '_' in w]
-fixed_bigrams
-
-#%%
-
-import xarray as xr
-import nlp_utils.common as nu_common 
 n_topics = [20,30,40,50]
 
 dss = []
@@ -85,7 +77,7 @@ for n_topic in n_topics:
     avg_prob = df_topicsyear.loc[year_range].mean()
     da_avg_prob = xr.DataArray(avg_prob, name='avg_prob')
 
-    df_fit = nu_common.fit_topic_year(df_topicsyear, year_range=year_range)
+    df_fit = nu.common.fit_topic_year(df_topicsyear, year_range=year_range)
     da_slopes = xr.DataArray(df_fit['slope'], name='slope')
 
     da_topic_words = xr.DataArray(s_topic_words, name='topic_words')

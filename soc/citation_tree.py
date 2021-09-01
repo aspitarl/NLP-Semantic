@@ -30,26 +30,18 @@ for doi in input_dois:
         print("Could not find doi: " + str(doi))
 
 #%%
-
 df_com = nu.citation.build_citation_community(df, con, n_iter=1, frac_keep_factor=0.5, n_initial_trim=10000)
 
 #%%
 docs = df_com['title'] + ' ' + df_com['paperAbstract']
 texts = docs.apply(str.split)
 
-# corex_anchors = [['fuel_cel', 'electrolyz'], ['pump_thermal', 'heat_pump'], 'li_ion']
-corex_anchors = []
-
-fixed_bigrams = []
-for word in corex_anchors:
-    if type(word) == list:
-        fixed_bigrams.extend(word)
-    else:
-        fixed_bigrams.append(word)
-
-fixed_bigrams = [w for w in fixed_bigrams if '_' in w]
-
 #%%
+
+corex_anchors = []
+# corex_anchors = [['fuel_cel', 'electrolyz'], ['pump_thermal', 'heat_pump'], 'li_ion']
+fixed_bigrams = nu.corex_utils.anchors_to_fixed_bigrams(corex_anchors)
+
 pipeline = Pipeline([
     ('text_norm', nu.text_process.TextNormalizer(post_stopwords=gen_lit_remove)),
     ('bigram', nu.gensim_utils.Gensim_Bigram_Transformer(bigram_kwargs={'threshold':20, 'min_count':10}, fixed_bigrams=fixed_bigrams)),
