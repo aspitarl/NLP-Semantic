@@ -4,7 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
-from nlp_utils.fileio import load_df_semantic
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer
+from corextopic import corextopic as ct
+
+import nlp_utils as nu
 
 DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
 db_path = os.path.join(DATASET_DIR, 'soc.db')
@@ -15,7 +19,7 @@ con = sqlite3.connect(db_path)
 all_dois = pd.read_csv('data/tech_doi.csv')
 input_dois = all_dois['general'].dropna()
 
-df = load_df_semantic(con, input_dois, cust_idx_name='doi')
+df = nu.io.load_df_semantic(con, input_dois, cust_idx_name='doi')
 
 for doi in input_dois:
     if doi not in df['doi'].values:
@@ -25,8 +29,7 @@ df
 
 #%%
 
-from nlp_utils.citation import build_citation_community
-df_com = build_citation_community(df, con, n_iter=3, frac_keep_factor=0.5, n_initial_trim=200)
+df_com = nu.citation.build_citation_community(df, con, n_iter=3, frac_keep_factor=0.5, n_initial_trim=200)
 
 #%%
 docs = df_com['title'] + ' ' + df_com['paperAbstract']
@@ -37,15 +40,6 @@ gen_lit_remove = gen_lit_tw[0:130].index.values
 
 
 #%%
-
-from sklearn.pipeline import Pipeline
-from nlp_utils.text_process import TextNormalizer
-from nlp_utils.gensim_utils import Gensim_Bigram_Transformer
-from sklearn.feature_extraction.text import CountVectorizer
-from corextopic import corextopic as ct
-from nlp_utils import corex_utils
-
-bigram_kwargs = {'threshold':20, 'min_count':10}
 
 corex_anchors = [['fuel_cel', 'electrolyz'], ['pump_thermal', 'heat_pump'], 'li_ion']
 
@@ -65,52 +59,26 @@ fixed_bigrams
 import xarray as xr
 import nlp_utils.common as nu_common 
 n_topics = [20,30,40,50]
-# n_topics = [5,6]
 
-topic_models= []
+dss = []
 
 for n_topic in n_topics:
-
-
     pipeline = Pipeline([
-        ('text_norm', TextNormalizer(post_stopwords=gen_lit_remove)),
-        ('bigram', Gensim_Bigram_Transformer(bigram_kwargs=bigram_kwargs, fixed_bigrams=fixed_bigrams)),
+        ('text_norm', nu.text_process.TextNormalizer(post_stopwords=gen_lit_remove)),
+        ('bigram', nu.gensim_utils.Gensim_Bigram_Transformer(bigram_kwargs={'threshold':20, 'min_count':10}, fixed_bigrams=fixed_bigrams)),
         ('vectorizer', CountVectorizer(max_features=None, min_df=2, max_df = 0.9, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
-        # ('corex', ct.Corex(n_hidden=n_topic, anchors = corex_anchors, anchor_strength=1000))
     ])
 
-    X = pipeline.fit_transform(texts)
 
+    X = pipeline.fit_transform(texts)
     feature_names = pipeline['vectorizer'].get_feature_names()
 
     topic_model = ct.Corex(n_hidden=n_topic)  # Define the number of latent (hidden) topics to use.
     topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, anchor_strength=5)
 
-    topic_models.append(topic_model)
-
-
-#%%
-
-dss = []
-
-for topic_model in topic_models:
-
-    n_topic = topic_model.n_hidden
-
-    topic_names = ['topic_' + str(i) for i in range(topic_model.n_hidden)]
-    s_topic_words = corex_utils.get_s_topic_words(topic_model, topic_names, n_words=20)
-
-    print(n_topic)
-    print(s_topic_words)
-
-    doc_topic_probs = topic_model.p_y_given_x
-    df_doc_topic_probs = pd.DataFrame(doc_topic_probs, index=df_com.index , columns=topic_names)
-
-    s_year = pd.Series(df_com['year'], index=df_com.index)
-
-    df_topicsyear = nu_common.calc_topics_year(df_doc_topic_probs, s_year, norm_each_topic=False)
-    df_topicsyear.index = df_topicsyear.index.astype(int)
-    df_topicsyear = df_topicsyear.sort_index()
+    s_topic_words = nu.corex_utils.get_s_topic_words(topic_model)
+    df_doc_topic_probs = pd.DataFrame(topic_model.p_y_given_x, index=df_com.index , columns=s_topic_words.index)
+    df_topicsyear = nu.common.calc_topics_year(df_doc_topic_probs, df_com['year'], norm_each_topic=False)
 
     year_range = slice(2015,2020)
 
@@ -118,7 +86,6 @@ for topic_model in topic_models:
     da_avg_prob = xr.DataArray(avg_prob, name='avg_prob')
 
     df_fit = nu_common.fit_topic_year(df_topicsyear, year_range=year_range)
-    df_fit = df_fit.astype(float)
     da_slopes = xr.DataArray(df_fit['slope'], name='slope')
 
     da_topic_words = xr.DataArray(s_topic_words, name='topic_words')
