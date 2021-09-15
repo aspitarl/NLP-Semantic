@@ -9,27 +9,26 @@ import gensim
 import matplotlib.pyplot as plt
 import sqlite3
 
-from text_process_s2orc import text_processing_pipeline, load_data_ids
+from nlp_utils.io import load_df_semantic, get_column_as_list
 
-db_path = r'C:\Users\aspit\Git\MLEF-Energy-Storage\s2orc\data\full\db_s2orc.db'
+DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
+db_path = os.path.join(DATASET_DIR, 'db_s2orc.db')
 con = sqlite3.connect(db_path)
 
-# regex = 'flywheel'
-# ids = con.execute("select \"%{}%\" from indexed_searches".format(regex)).fetchall()
+regex = 'flywheel'
+ids = get_column_as_list(con, '%flywheel%', 'indexed_searches')
 
-ids =pd.read_csv('data/citation_tree_results.csv')['paper_id'].astype(str)
+# ids =pd.read_csv('data/citation_tree_results.csv')['paper_id'].astype(str)
 
-df= load_data_ids(con, ids)
+df= load_df_semantic(con, ids, dataset='s2orc')
 
-df['year'] = df['year'].astype(float).astype(int) #TODO: move earlier?
 #%%
-
+from nlp_utils.text_process import text_processing_pipeline
 
 # The text we will analyze is words in both the title and abstract concatenated. 
 docs = df['title'] + ' ' + df['abstract']
-texts = docs.apply(str.split)
 
-texts_out = text_processing_pipeline(texts, debug=False)
+texts_out = text_processing_pipeline(docs, debug=False)
 
 
 bigram = gensim.models.Phrases(texts_out, threshold=20, min_count=10)
