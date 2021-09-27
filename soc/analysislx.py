@@ -24,10 +24,15 @@ all_dois = pd.read_csv('data/tech_doi.csv')
 input_dois = all_dois['general'].dropna()
 df = nu.io.load_df_semantic(con, input_dois, cust_idx_name='doi')
 
+df['title'].values
+
+#%%
+
 G = nx.Graph()
 G.add_nodes_from(df.index.values, round=0)
 
-for round in [1, 2]:
+for round in range(1,5):
+    print("round " + str(round))
     df = load_df_semantic(con, G.nodes)
     G = gen_citation_tree(G, df)
     G = get_frac_connected(G, con)
@@ -44,41 +49,41 @@ con.close()
 #%%
 
 
-from bokeh.plotting import figure, from_networkx
-from bokeh.io import output_notebook, show, output_file
-from bokeh.models import (BoxSelectTool, Circle, EdgesAndLinkedNodes, HoverTool,
-                          MultiLine, NodesAndLinkedEdges, Plot, Range1d, TapTool,)
-from bokeh.palettes import Spectral4
+# from bokeh.plotting import figure, from_networkx
+# from bokeh.io import output_notebook, show, output_file
+# from bokeh.models import (BoxSelectTool, Circle, EdgesAndLinkedNodes, HoverTool,
+#                           MultiLine, NodesAndLinkedEdges, Plot, Range1d, TapTool,)
+# from bokeh.palettes import Spectral4
 
-for node in G.nodes:
-    # if node in df_2.index:
-    G.nodes[node]['title']= df.loc[node]['title']
-    G.nodes[node]['round'] = Spectral4[G.nodes[node]['round']]
-
-
-plot = figure(plot_width=800, plot_height=800)
-graph = from_networkx(G, nx.spring_layout)
-
-graph.node_renderer.glyph = Circle(size=15, fill_color='round')
-graph.node_renderer.selection_glyph = Circle(size=15, fill_color=Spectral4[2])
-graph.node_renderer.hover_glyph = Circle(size=15, fill_color=Spectral4[1])
-
-graph.edge_renderer.glyph = MultiLine(line_color='black', line_alpha=0.4, line_width=1)
-graph.edge_renderer.selection_glyph = MultiLine(line_color=Spectral4[2], line_width=1)
-graph.edge_renderer.hover_glyph = MultiLine(line_color=Spectral4[1], line_width=1)
+# for node in G.nodes:
+#     # if node in df_2.index:
+#     G.nodes[node]['title']= df.loc[node]['title']
+#     G.nodes[node]['round'] = Spectral4[G.nodes[node]['round']]
 
 
-graph.selection_policy = NodesAndLinkedEdges()
-# graph.inspection_policy = EdgesAndLinkedNodes()
+# plot = figure(plot_width=800, plot_height=800)
+# graph = from_networkx(G, nx.spring_layout)
 
-plot.add_tools(HoverTool(tooltips=[('title', '@title')]), TapTool(), BoxSelectTool())
-plot.renderers.append(graph)
+# graph.node_renderer.glyph = Circle(size=15, fill_color='round')
+# graph.node_renderer.selection_glyph = Circle(size=15, fill_color=Spectral4[2])
+# graph.node_renderer.hover_glyph = Circle(size=15, fill_color=Spectral4[1])
 
-output_notebook()
-show(plot)
+# graph.edge_renderer.glyph = MultiLine(line_color='black', line_alpha=0.4, line_width=1)
+# graph.edge_renderer.selection_glyph = MultiLine(line_color=Spectral4[2], line_width=1)
+# graph.edge_renderer.hover_glyph = MultiLine(line_color=Spectral4[1], line_width=1)
 
-# output_file('test.html')
+
+# graph.selection_policy = NodesAndLinkedEdges()
+# # graph.inspection_policy = EdgesAndLinkedNodes()
+
+# plot.add_tools(HoverTool(tooltips=[('title', '@title')]), TapTool(), BoxSelectTool())
+# plot.renderers.append(graph)
+
+# output_notebook()
 # show(plot)
+
+# # output_file('test.html')
+# # show(plot)
 
 #%%
 df_com = df
@@ -89,7 +94,13 @@ texts = docs.apply(str.split)
 gen_lit_tw = pd.read_csv('data/gen_literature_top_words.csv',index_col=0)
 gen_lit_remove = gen_lit_tw[0:130].index.values
 
-corex_anchors = [['fuel_cel', 'electrolyz'], ['pump_thermal', 'heat_pump'], 'li_ion']
+corex_anchors = [
+    ['fuel_cel', 'electrolyz'], 
+    ['pump_thermal', 'heat_pump'], 
+    'li_ion',
+    'v_redox',
+    'lead_acid'
+    ]
 fixed_bigrams = nu.corex_utils.anchors_to_fixed_bigrams(corex_anchors)
 
 from sklearn.pipeline import Pipeline
@@ -99,7 +110,7 @@ from corextopic import corextopic as ct
 pipeline = Pipeline([
     ('text_norm', nu.text_process.TextNormalizer(post_stopwords=gen_lit_remove)),
     ('bigram', nu.gensim_utils.Gensim_Bigram_Transformer(bigram_kwargs={'threshold':20, 'min_count':10}, fixed_bigrams=fixed_bigrams)),
-    ('vectorizer', CountVectorizer(max_features=None, min_df=2, max_df = 0.9, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
+    ('vectorizer', CountVectorizer(max_features=None, min_df=0.001, max_df = 0.5, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
 ])
 
 X = pipeline.fit_transform(texts)
@@ -113,10 +124,15 @@ df_doc_topic_probs = pd.DataFrame(topic_model.p_y_given_x, index=df_com.index , 
 df_topicsyear = nu.common.calc_topics_year(df_doc_topic_probs, df_com['year'], norm_each_topic=False)
 # %%
 
-year_range_fit = slice(2015,2020)
-year_range_plot = slice(2000,2020)
+from importlib import reload
+reload(nu.plot)
 
-nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=30)
+highlight_topics = ['topic_' + str(i) for i in range(len(corex_anchors))]
+
+year_range_fit = slice(2015,2020)
+year_range_plot = slice(1990,2020)
+
+nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=30, highlight_topics=highlight_topics)
 
 
 #%%
