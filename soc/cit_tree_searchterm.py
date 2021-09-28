@@ -20,7 +20,7 @@ db_folder = r'E:\\'
 con = sqlite3.connect(os.path.join(db_folder, 'soc.db'))
 cursor = con.cursor()
 
-regex = '%energy storage%'
+regex = '%carbon nanotube%'
 ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(1e6))
 #%%
 df = load_df_semantic(con, ids)
@@ -42,7 +42,7 @@ df = load_df_semantic(con, G.nodes)
 
 #%%
 
-for n_max in [1000, 10000, 100000]:
+for n_max in [1000, 10000]:
 
     df = load_df_semantic(con, G.nodes)
     G = gen_citation_tree(G, df, cit_field='inCitations', only_existing=False)
@@ -80,21 +80,11 @@ feature_names = pipeline['vectorizer'].get_feature_names()
 topic_model = ct.Corex(n_hidden=30, seed=42)  # Define the number of latent (hidden) topics to use.
 topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, anchor_strength=5)
 
-s_topic_words = nu.corex_utils.get_s_topic_words(topic_model, 10)
-df_doc_topic_probs = pd.DataFrame(topic_model.p_y_given_x, index=df_tm.index , columns=s_topic_words.index)
-df_topicsyear = nu.common.calc_topics_year(df_doc_topic_probs, df_tm['year'], norm_each_topic=False)
+import _pickle as cPickle
+#Save model
+model_name =  'mod_cit_tree.pkl' 
+output_folder = r'C:\Users\aspit\Git\NLP-Semantic\soc\output'
+cPickle.dump(topic_model, open(os.path.join(output_folder, model_name), 'wb'))
+
+
 # %%
-
-from importlib import reload
-reload(nu.plot)
-
-highlight_topics = ['topic_' + str(i) for i in range(len(corex_anchors))]
-
-year_range_fit = slice(2015,2020)
-year_range_plot = slice(1990,2020)
-
-nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=30, highlight_topics=highlight_topics)
-
-
-#%%
-
