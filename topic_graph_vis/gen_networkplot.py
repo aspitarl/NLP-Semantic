@@ -586,15 +586,13 @@ layout =  column(
 
 #%%
 #save and show
-output_file(filename="ES_networkplot.html", title = 'Topic Modeling wtih LDA')
+output_fp = "output/ES_networkplot.html"
+
+if not os.path.exists("output"): 
+    os.mkdir('output')
+
+output_file(filename=output_fp, title = 'Topic Modeling wtih LDA')
+
 show(layout)
 
-website_path = r'C:\Users\byahn\Code\MLEF\MLEF-Energy-Storage.github.io'
-html_path = os.path.join(website_path,'ES_networkplot.html')
-output_file(html_path, title="Topic Modeling with LDA")
-save(layout)
-
-# from bokeh.io import curdoc
-# curdoc().add_root(layout)
-# curdoc().title = "Energy Storage Literature Clustering"
 # %%
