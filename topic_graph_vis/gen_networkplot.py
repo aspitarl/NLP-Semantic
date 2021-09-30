@@ -577,8 +577,9 @@ group_plot.renderers.append(group_graph_renderer)
 ##%%
 # make the layout of the page
 layout =  column(
-    row(intro_text, column(table_text, data_table)), 
-    row(plot, column(topic_words_list, row(text_top_papers_topic, text_top_papers_6_10), column(topic_words_list_2, row(top_papers_topic_2, top_papers_6_10_2)),column(trend_text, plot_trend))), 
+    intro_text,
+    row(plot, column(topic_words_list, row(text_top_papers_topic, text_top_papers_6_10), column(topic_words_list_2, row(top_papers_topic_2, top_papers_6_10_2)))), 
+    row(column(table_text, data_table), column(trend_text, plot_trend)),
     group_text, 
     row(group_plot, column(group_words_list, group_plot_trend))
     )
