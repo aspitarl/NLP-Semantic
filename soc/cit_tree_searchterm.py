@@ -12,48 +12,83 @@ import nlp_utils as nu
 
 from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_frac_connected, trim_graph_size
 
-# db_folder = r'/media/lee/Shared Storage'
 db_folder = r'E:\\'
-
-# %%
 
 con = sqlite3.connect(os.path.join(db_folder, 'soc.db'))
 cursor = con.cursor()
 
-regex = '%carbon nanotube%'
-ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(1e6))
+
 #%%
-df = load_df_semantic(con, ids)
-df['inCitations'].apply(len).value_counts().sort_index()
-# df = df.where(df['inCitations'].apply(len) >100).dropna(how='all')
+def set_round(G, round):
+    """
+    Set 'round' attribute of each node if it doesn't already exist
+    """
+    for node in G.nodes:
+        if 'round' not in G.nodes[node]:
+            G.nodes[node]['round'] = round
+
+regex = '%natural language processing%'
+ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(1e6))
 
 G = nx.Graph()
-G.add_nodes_from(df.index.values, round=0)
-
+G.add_nodes_from(ids, round=0)
 
 ## Initial internal citation trim
-G = gen_citation_tree(G, df, cit_field='inCitations', only_existing=True)
-# G = gen_citation_tree(G, df, cit_field='outCitations', only_existing=True)
+G = gen_citation_tree(G, con, cit_field='inCitations', add_new=False)
 print("size of citation tree: {}".format(len(G.nodes)))
-
 G = trim_graph_size(G, 100)
-df = load_df_semantic(con, G.nodes)
 
 
-#%%
-
-for n_max in [1000, 10000]:
-
-    df = load_df_semantic(con, G.nodes)
-    G = gen_citation_tree(G, df, cit_field='inCitations', only_existing=False)
-    G = gen_citation_tree(G, df, cit_field='outCitations', only_existing=False)
-    print("size of citation tree: {}".format(len(G.nodes)))
+#Grow citation graph including external citations
+for i, n_max in enumerate([500,5000,50000]):
+    print('Round {}'.format(i+1))
+    G = gen_citation_tree(G, con, cit_field='both', add_new=True)
+    print("size of final citation tree: {}".format(len(G.nodes)))
     G = trim_graph_size(G, n_max)
+    set_round(G, i+1)
+
+df = load_df_semantic(con, G.nodes)
+G.remove_nodes_from([id for id in G.nodes if id not in df.index])
 
 
 #%%
-#%%
 
+# from bokeh.plotting import figure, from_networkx
+# from bokeh.io import output_notebook, show, output_file
+# from bokeh.models import (BoxSelectTool, Circle, EdgesAndLinkedNodes, HoverTool,
+#                           MultiLine, NodesAndLinkedEdges, Plot, Range1d, TapTool,Legend,LegendItem)
+# from bokeh.palettes import Spectral5
+
+# cmap = Spectral5
+
+# for node in G.nodes:
+#     # if node in df_2.index:
+#     G.nodes[node]['title']= df.loc[node]['title']
+#     G.nodes[node]['cit_round'] = cmap[G.nodes[node]['round']]
+
+# plot = figure(plot_width=800, plot_height=800)
+# graph = from_networkx(G, nx.spring_layout)
+
+# graph.node_renderer.glyph = Circle(size=15, fill_color='cit_round')
+# graph.node_renderer.selection_glyph = Circle(size=15, fill_color=cmap[2])
+# graph.node_renderer.hover_glyph = Circle(size=15, fill_color=cmap[1])
+
+# graph.edge_renderer.glyph = MultiLine(line_color='black', line_alpha=0.4, line_width=1)
+# graph.edge_renderer.selection_glyph = MultiLine(line_color=cmap[2], line_width=1)
+# graph.edge_renderer.hover_glyph = MultiLine(line_color=cmap[1], line_width=1)
+
+# graph.selection_policy = NodesAndLinkedEdges()
+
+# plot.add_tools(HoverTool(tooltips=[('title', '@title')]), TapTool(), BoxSelectTool())
+# plot.renderers.append(graph)
+
+# output_notebook()
+# show(plot)
+
+
+
+#%%
+print("Topic Modeling")
 df_tm = load_df_semantic(con, G.nodes)
 docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
 texts = docs.apply(str.split)
@@ -77,7 +112,7 @@ pipeline = Pipeline([
 X = pipeline.fit_transform(texts)
 feature_names = pipeline['vectorizer'].get_feature_names()
 
-topic_model = ct.Corex(n_hidden=30, seed=42)  # Define the number of latent (hidden) topics to use.
+topic_model = ct.Corex(n_hidden=50, seed=42)  # Define the number of latent (hidden) topics to use.
 topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, anchor_strength=5)
 
 import _pickle as cPickle
@@ -85,6 +120,27 @@ import _pickle as cPickle
 model_name =  'mod_cit_tree.pkl' 
 output_folder = r'C:\Users\aspit\Git\NLP-Semantic\soc\output'
 cPickle.dump(topic_model, open(os.path.join(output_folder, model_name), 'wb'))
+
+#%%
+
+s_topic_words = nu.corex_utils.get_s_topic_words(topic_model, 10)
+df_doc_topic_probs = pd.DataFrame(topic_model.p_y_given_x, index=df_tm.index , columns=s_topic_words.index)
+df_topicsyear = nu.common.calc_topics_year(df_doc_topic_probs, df_tm['year'], norm_each_topic=False)
+
+
+from importlib import reload
+reload(nu.plot)
+
+highlight_topics = ['topic_' + str(i) for i in range(len(corex_anchors))]
+
+year_range_fit = slice(2015,2020)
+year_range_plot = slice(1990,2020)
+
+nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=30, highlight_topics=highlight_topics)
+
+
+
+
 
 #%%
 # from nlp_utils.gensim_utils import basic_gensim_lda
