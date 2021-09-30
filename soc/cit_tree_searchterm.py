@@ -86,5 +86,28 @@ model_name =  'mod_cit_tree.pkl'
 output_folder = r'C:\Users\aspit\Git\NLP-Semantic\soc\output'
 cPickle.dump(topic_model, open(os.path.join(output_folder, model_name), 'wb'))
 
+#%%
+# from nlp_utils.gensim_utils import basic_gensim_lda
+# from nlp_utils import gensim_utils
 
-# %%
+# pipeline = Pipeline([
+#     ('text_norm', nu.text_process.TextNormalizer(post_stopwords=gen_lit_remove)),
+#     ('bigram', nu.gensim_utils.Gensim_Bigram_Transformer(bigram_kwargs={'threshold':20, 'min_count':10}, fixed_bigrams=fixed_bigrams)),
+#     # ('vectorizer', CountVectorizer(max_features=None, min_df=0.001, max_df = 0.5, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
+# ])
+
+# texts_bigram = pipeline.fit_transform(texts)
+
+# n_topics = 50
+# alpha = 1/n_topics
+
+# lda_kwargs = {'alpha': alpha, 'eta': 0.03, 'num_topics':n_topics, 'passes':5}
+# id2word, data_words, lda_model = basic_gensim_lda(texts_bigram, lda_kwargs)
+
+
+# lda_model.texts_bigram = texts_bigram
+# lda_model.id2word = id2word
+# lda_model.data_words = data_words
+# lda_model.idx = df_tm.index.values
+# lda_model.save(r'C:\Users\aspit\Git\NLP-Semantic\soc\output\ldamod_cit_tree.lda')
+
