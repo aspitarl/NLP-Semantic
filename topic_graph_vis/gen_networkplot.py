@@ -19,17 +19,20 @@ import networkx as nx
 import os
 data_folder = 'data'
 
+import sys
+
+
+
 # Generate Louvian Communities
 #load graph
 G = nx.read_gexf(os.path.join(data_folder,'G.gexf'))
 
-#create partitions
-#resolution=0.5 --> 7 communities
-#resolution=0.75 --> 6 communities
-#resolution=0.8 --> 5 communtities
-#resolution=1 --> 4 communities
-#resolution=2 --> 3 communities 
-partition = community_louvain.best_partition(G, resolution = 1, random_state=2)
+if len(sys.argv) > 1:
+    resolution = float(sys.argv[1])
+else:
+    resolution = 1
+    
+partition = community_louvain.best_partition(G, resolution = resolution, random_state=2)
 print('Number Partitions ' + str(list(set(partition.values()))))
 
 #get colormap
