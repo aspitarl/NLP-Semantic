@@ -53,37 +53,45 @@ G.remove_nodes_from([id for id in G.nodes if id not in df.index])
 
 #%%
 
-# from bokeh.plotting import figure, from_networkx
-# from bokeh.io import output_notebook, show, output_file
-# from bokeh.models import (BoxSelectTool, Circle, EdgesAndLinkedNodes, HoverTool,
-#                           MultiLine, NodesAndLinkedEdges, Plot, Range1d, TapTool,Legend,LegendItem)
-# from bokeh.palettes import Spectral5
+from bokeh.plotting import figure, from_networkx
+from bokeh.io import output_notebook, show, output_file
+from bokeh.models import (BoxSelectTool, Circle, EdgesAndLinkedNodes, HoverTool,
+                          MultiLine, NodesAndLinkedEdges, Plot, Range1d, TapTool,Legend,LegendItem, ColumnDataSource)
+from bokeh.palettes import Spectral4, Spectral5
 
-# cmap = Spectral5
+cmap = Spectral5
 
-# for node in G.nodes:
-#     # if node in df_2.index:
-#     G.nodes[node]['title']= df.loc[node]['title']
-#     G.nodes[node]['cit_round'] = cmap[G.nodes[node]['round']]
+plot = figure(plot_width=600, plot_height=600)
 
-# plot = figure(plot_width=800, plot_height=800)
-# graph = from_networkx(G, nx.spring_layout)
+#Dummy markers for legend, doesn't appear to be a way to have a colored legend with networx plot...
+rounds = set(G.nodes[node]['round'] for node in G.nodes)
+source = ColumnDataSource(dict(
+    x = [0]*len(rounds),
+    y = [0]*len(rounds),
+    color = [cmap[r] for r in rounds],
+    label=["Round {}".format(r) for r in rounds]
+))
 
-# graph.node_renderer.glyph = Circle(size=15, fill_color='cit_round')
-# graph.node_renderer.selection_glyph = Circle(size=15, fill_color=cmap[2])
-# graph.node_renderer.hover_glyph = Circle(size=15, fill_color=cmap[1])
+plot.circle(source=source, legend_group = 'label', color = 'color', visible=False)
 
-# graph.edge_renderer.glyph = MultiLine(line_color='black', line_alpha=0.4, line_width=1)
-# graph.edge_renderer.selection_glyph = MultiLine(line_color=cmap[2], line_width=1)
-# graph.edge_renderer.hover_glyph = MultiLine(line_color=cmap[1], line_width=1)
+# Networkx plot
+for node in G.nodes:
+    # if node in df_2.index:
+    G.nodes[node]['title']= df.loc[node]['title']
+    G.nodes[node]['cit_round'] = cmap[G.nodes[node]['round']]
 
-# graph.selection_policy = NodesAndLinkedEdges()
+graph = from_networkx(G, nx.spring_layout)
 
-# plot.add_tools(HoverTool(tooltips=[('title', '@title')]), TapTool(), BoxSelectTool())
-# plot.renderers.append(graph)
+graph.node_renderer.glyph = Circle(size=15, fill_color='cit_round')
+# graph.node_renderer.selection_glyph = Circle(size=15, fill_color='gray')
+graph.node_renderer.hover_glyph = Circle(size=15, fill_color='gray')
+graph.edge_renderer.glyph = MultiLine(line_color='black', line_alpha=0.4, line_width=1)
 
-# output_notebook()
-# show(plot)
+plot.add_tools(HoverTool(tooltips=[('title', '@title')]), TapTool(), BoxSelectTool())
+plot.renderers.append(graph)
+
+output_notebook()
+show(plot)
 
 
 
