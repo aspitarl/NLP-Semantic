@@ -84,11 +84,7 @@ from bokeh.plotting import figure, show, from_networkx, save
 from bokeh.palettes import Colorblind3, Colorblind4, Colorblind5, Colorblind6, Colorblind7
 from bokeh.layouts import column, row, layout
 
-intro_text = Div(text="""<h1>Topic Modeling with LDA</h1><br>
-<h2>
-We used Latent Dirichlet Allocation (LDA) to extract 100 topics from ~60,000 abstracts relating to energy storage.
-We grouped these into categories using the Louvain community detection algorithm, and created an interactive graph visualization of the topics and their relationships.<br><br>
-</h2>
+intro_text = Div(text="""<h1>Topic Modeling graph visualization</h1><br>
 <h2> Graph Key: </h2>
 <h3> Each node represents a topic and each edge between two topics represents the likelihood of the two topics appearing in an abstract together.<br>
 <b>NODE COLOR:</b> community assigned by the Louvain community detection algorithm.<br>
