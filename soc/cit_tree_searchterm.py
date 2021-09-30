@@ -1,5 +1,6 @@
 #%%
 
+from bokeh.models.sources import ColumnDataSource
 import pandas as pd
 import xarray as xr
 import os
@@ -10,7 +11,7 @@ import matplotlib.pyplot as plt
 from nlp_utils.io import load_df_semantic
 import nlp_utils as nu
 
-from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_frac_connected, trim_graph_size
+from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_frac_connected, trim_graph_num_edges, trim_graph_size
 
 db_folder = r'E:\\'
 
@@ -26,9 +27,12 @@ def set_round(G, round):
     for node in G.nodes:
         if 'round' not in G.nodes[node]:
             G.nodes[node]['round'] = round
+    return G
 
-regex = '%natural language processing%'
-ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(1e6))
+regex = '%carbon nanotube%'
+ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(5e5))
+
+#%%
 
 G = nx.Graph()
 G.add_nodes_from(ids, round=0)
@@ -36,18 +40,24 @@ G.add_nodes_from(ids, round=0)
 ## Initial internal citation trim
 G = gen_citation_tree(G, con, cit_field='inCitations', add_new=False)
 print("size of citation tree: {}".format(len(G.nodes)))
-G = trim_graph_size(G, 100)
+G = trim_graph_size(G, 1000)
+G = trim_graph_num_edges(G, 1)
 
 
 #Grow citation graph including external citations
-for i, n_max in enumerate([500,5000,50000]):
+for i, n_max in enumerate([1000,1000,1000,1000]):
     print('Round {}'.format(i+1))
     G = gen_citation_tree(G, con, cit_field='both', add_new=True)
     print("size of final citation tree: {}".format(len(G.nodes)))
     G = trim_graph_size(G, n_max)
+    G = trim_graph_num_edges(G, 1)
     set_round(G, i+1)
 
+
+print("Loading final database")
 df = load_df_semantic(con, G.nodes)
+
+print("removing nodes not in database")
 G.remove_nodes_from([id for id in G.nodes if id not in df.index])
 
 
@@ -96,7 +106,7 @@ show(plot)
 
 
 #%%
-print("Topic Modeling")
+print("Corex Topic Modeling")
 df_tm = load_df_semantic(con, G.nodes)
 docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
 texts = docs.apply(str.split)
@@ -120,7 +130,7 @@ pipeline = Pipeline([
 X = pipeline.fit_transform(texts)
 feature_names = pipeline['vectorizer'].get_feature_names()
 
-topic_model = ct.Corex(n_hidden=50, seed=42)  # Define the number of latent (hidden) topics to use.
+topic_model = ct.Corex(n_hidden=30, seed=42)  # Define the number of latent (hidden) topics to use.
 topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, anchor_strength=5)
 
 import _pickle as cPickle
@@ -151,6 +161,8 @@ nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_
 
 
 #%%
+
+# print("LDA Topic Modeling")
 # from nlp_utils.gensim_utils import basic_gensim_lda
 # from nlp_utils import gensim_utils
 
@@ -162,7 +174,7 @@ nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_
 
 # texts_bigram = pipeline.fit_transform(texts)
 
-# n_topics = 50
+# n_topics = 30
 # alpha = 1/n_topics
 
 # lda_kwargs = {'alpha': alpha, 'eta': 0.03, 'num_topics':n_topics, 'passes':5}
