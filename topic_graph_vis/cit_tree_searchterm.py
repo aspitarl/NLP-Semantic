@@ -12,10 +12,9 @@ import matplotlib.pyplot as plt
 from nlp_utils.io import load_df_semantic
 import nlp_utils as nu
 
-from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_frac_connected, trim_graph_num_edges, trim_graph_size
+from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_citation_info, trim_graph_inCits, trim_graph_num_edges, trim_graph_size
 
 db_folder = r'E:\\'
-
 con = sqlite3.connect(os.path.join(db_folder, 'soc.db'))
 cursor = con.cursor()
 
@@ -31,46 +30,48 @@ def set_round(G, round):
     return G
 
 regex = '%energy storage%'
-ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(5e6), output_limit=1000)
+ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(5e6), output_limit=3000)
 
 #%%
 
 def trim_graph(G, n_max):
     G = trim_graph_size(G, n_max*2)
     G = trim_graph_num_edges(G, 1)
-    G = get_frac_connected(G, con)
+    G = get_citation_info(G, con)
     G = trim_graph_fraction(G, n_max)
     G = trim_graph_num_edges(G, 1)
     return G
 
-all_Gs = []
+all_Gs = pd.Series(dtype='object')
 
 G = nx.Graph()
-G.add_nodes_from(ids, round=0)
+G.add_nodes_from(ids)
 
 ## Initial internal citation trim
 G = gen_citation_tree(G, con, cit_field='inCitations', add_new=False)
+all_Gs['Initial'] = G.copy()
 print("size of citation tree: {}".format(len(G.nodes)))
 
-G = nu.citation.trim_connected_components(G, 10)
-G = trim_graph(G, 100)
-
-all_Gs.append(G.copy())
-
+# G = nu.citation.trim_connected_components(G, 10)
+# G = trim_graph(G, 100)
+G = get_citation_info(G, con)
+G = trim_graph_inCits(G, 300)
+all_Gs['inCitation Trim'] = G.copy()
 
 #%%
 #Grow citation graph including external citations
 for i, n_max in enumerate([300,1000,3000,10000]):
-    print('Round {}'.format(i+1))
+    print('Growth Round {}'.format(i+1))
+    G = set_round(G, i)
     G = gen_citation_tree(G, con, cit_field='both', add_new=True)
     print("size of final citation tree: {}".format(len(G.nodes)))
     G = trim_graph(G, n_max)
 
     G = nu.citation.trim_connected_components(G, 1)
-    set_round(G, i+1)
+    all_Gs['Growth Round {}'.format(i)] = G.copy()
 
-    all_Gs.append(G.copy())
 
+G = set_round(G, i+1)
 
 print("Loading final database")
 df = load_df_semantic(con, G.nodes)
@@ -78,25 +79,24 @@ df = load_df_semantic(con, G.nodes)
 print("removing nodes not in database")
 G.remove_nodes_from([id for id in G.nodes if id not in df.index])
 
-nx.write_gexf(G, os.path.join('output','G_cit_tree.gexf'))
+nx.write_gexf(G, os.path.join('data','G_cit_tree.gexf'))
 #%%
 
 from fa2 import ForceAtlas2
 forceatlas2 = ForceAtlas2()
 #%%
 
-rounds_plot = [0,1,2,3,4]
 
-fig, axes = plt.subplots(1,len(rounds_plot), figsize=(15,5))
+fig, axes = plt.subplots(1,len(all_Gs), figsize=(15,5))
 
-for round in rounds_plot:
+for i, round in enumerate(all_Gs.index):
     G_plot = all_Gs[round]
     # pos = nx.spring_layout(G_plot)
-    pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=10)
-    nx.draw_networkx_nodes(G_plot, pos, ax=axes[round], node_size=10)
-    nx.draw_networkx_edges(G_plot, pos, ax=axes[round],width=0.1)
+    pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=5)
+    nx.draw_networkx_nodes(G_plot, pos, ax=axes[i], node_size=10)
+    nx.draw_networkx_edges(G_plot, pos, ax=axes[i],width=0.1)
 
-    axes[round].set_title('Round {}'.format(round))
+    axes[i].set_title(round)
 
 
 plt.savefig('output/cit_tree_rounds.png')
@@ -165,83 +165,5 @@ output_file(filename='output/cit_tree_bokeh.html', title = 'Initial Citation Tre
 show(plot)
 
 #%%
-print("Corex Topic Modeling")
-df_tm = load_df_semantic(con, G.nodes)
-docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
-texts = docs.apply(str.split)
 
-gen_lit_tw = pd.read_csv('data/gen_literature_top_words.csv',index_col=0)
-gen_lit_remove = gen_lit_tw[0:130].index.values
-
-corex_anchors = []
-fixed_bigrams = nu.corex_utils.anchors_to_fixed_bigrams(corex_anchors)
-
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import CountVectorizer
-from corextopic import corextopic as ct
-
-pipeline = Pipeline([
-    ('text_norm', nu.text_process.TextNormalizer(post_stopwords=gen_lit_remove)),
-    ('bigram', nu.gensim_utils.Gensim_Bigram_Transformer(bigram_kwargs={'threshold':20, 'min_count':10}, fixed_bigrams=fixed_bigrams)),
-    ('vectorizer', CountVectorizer(max_features=None, min_df=0.001, max_df = 0.5, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
-])
-
-X = pipeline.fit_transform(texts)
-feature_names = pipeline['vectorizer'].get_feature_names()
-
-topic_model = ct.Corex(n_hidden=30, seed=42)  # Define the number of latent (hidden) topics to use.
-topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, anchor_strength=5)
-
-import _pickle as cPickle
-#Save model
-if not os.path.exists('models'): os.mkdir('models')
-cPickle.dump(topic_model, open(os.path.join('models', 'mod_cit_tree.pkl'), 'wb'))
-
-#%%
-
-s_topic_words = nu.corex_utils.get_s_topic_words(topic_model, 10)
-df_doc_topic_probs = pd.DataFrame(topic_model.p_y_given_x, index=df_tm.index , columns=s_topic_words.index)
-df_topicsyear = nu.common.calc_topics_year(df_doc_topic_probs, df_tm['year'], norm_each_topic=False)
-
-
-from importlib import reload
-reload(nu.plot)
-
-highlight_topics = ['topic_' + str(i) for i in range(len(corex_anchors))]
-
-year_range_fit = slice(2015,2020)
-year_range_plot = slice(1990,2020)
-
-nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=30, highlight_topics=highlight_topics)
-
-plt.savefig('output/top_slopes_plot.png')
-
-
-
-#%%
-
-# print("LDA Topic Modeling")
-# from nlp_utils.gensim_utils import basic_gensim_lda
-# from nlp_utils import gensim_utils
-
-# pipeline = Pipeline([
-#     ('text_norm', nu.text_process.TextNormalizer(post_stopwords=gen_lit_remove)),
-#     ('bigram', nu.gensim_utils.Gensim_Bigram_Transformer(bigram_kwargs={'threshold':20, 'min_count':10}, fixed_bigrams=fixed_bigrams)),
-#     # ('vectorizer', CountVectorizer(max_features=None, min_df=0.001, max_df = 0.5, tokenizer= lambda x: x, preprocessor=lambda x:x, input='content')), #https://stackoverflow.com/questions/35867484/pass-tokens-to-countvectorizer
-# ])
-
-# texts_bigram = pipeline.fit_transform(texts)
-
-# n_topics = 30
-# alpha = 1/n_topics
-
-# lda_kwargs = {'alpha': alpha, 'eta': 0.03, 'num_topics':n_topics, 'passes':5}
-# id2word, data_words, lda_model = basic_gensim_lda(texts_bigram, lda_kwargs)
-
-
-# lda_model.texts_bigram = texts_bigram
-# lda_model.id2word = id2word
-# lda_model.data_words = data_words
-# lda_model.idx = df_tm.index.values
-# lda_model.save(r'C:\Users\aspit\Git\NLP-Semantic\soc\output\ldamod_cit_tree.lda')
-
+con.close()

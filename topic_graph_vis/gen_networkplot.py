@@ -25,7 +25,7 @@ import sys
 
 # Generate Louvian Communities
 #load graph
-G = nx.read_gexf(os.path.join(data_folder,'G.gexf'))
+G = nx.read_gexf(os.path.join(data_folder,'G_topic.gexf'))
 
 if len(sys.argv) > 1:
     resolution = float(sys.argv[1])

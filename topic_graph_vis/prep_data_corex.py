@@ -15,9 +15,8 @@ from nlp_utils.io import load_df_semantic
 
 import _pickle as cPickle
 
-models_folder = r'C:\Users\aspit\Git\NLP-Semantic\soc\output'
 
-topic_model = cPickle.load(open(os.path.join(models_folder, 'mod_cit_tree.pkl'), 'rb'))
+topic_model = cPickle.load(open(os.path.join('models', 'mod_cit_tree.pkl'), 'rb'))
 
 db_folder = r'E:\\'
 import sqlite3
@@ -176,5 +175,5 @@ for node in G.nodes:
 
 print('Writing graph to disk')
 
-nx.write_gexf(G, os.path.join(data_folder,'G.gexf'))
+nx.write_gexf(G, os.path.join(data_folder,'G_topic.gexf'))
 # %%
