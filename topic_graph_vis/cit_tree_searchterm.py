@@ -30,7 +30,7 @@ def set_round(G, round):
             G.nodes[node]['round'] = round
     return G
 
-regex = '%natural language processing%'
+regex = '%energy storage%'
 ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(5e6), output_limit=1000)
 
 #%%
@@ -194,9 +194,8 @@ topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, 
 
 import _pickle as cPickle
 #Save model
-model_name =  'mod_cit_tree.pkl' 
-output_folder = r'C:\Users\aspit\Git\NLP-Semantic\soc\output'
-cPickle.dump(topic_model, open(os.path.join(output_folder, model_name), 'wb'))
+if not os.path.exists('models'): os.mkdir('models')
+cPickle.dump(topic_model, open(os.path.join('models', 'mod_cit_tree.pkl'), 'wb'))
 
 #%%
 
