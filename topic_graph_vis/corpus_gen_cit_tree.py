@@ -29,8 +29,8 @@ def set_round(G, round):
             G.nodes[node]['round'] = round
     return G
 
-regex = '%energy storage%'
-ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(5e6), output_limit=3000)
+regex = '%geographic information system%'
+ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(25e6), output_limit=10000)
 
 #%%
 
@@ -52,11 +52,14 @@ G = gen_citation_tree(G, con, cit_field='inCitations', add_new=False)
 all_Gs['Initial'] = G.copy()
 print("size of citation tree: {}".format(len(G.nodes)))
 
-# G = nu.citation.trim_connected_components(G, 10)
-# G = trim_graph(G, 100)
-G = get_citation_info(G, con)
-G = trim_graph_inCits(G, 300)
-all_Gs['inCitation Trim'] = G.copy()
+G = nu.citation.trim_connected_components(G, 1)
+
+all_Gs['Keep largest connected graph'] = G.copy()
+
+G = trim_graph(G, 300)
+# G = get_citation_info(G, con)
+# G = trim_graph_inCits(G, 300)
+all_Gs['Trim to 300 most connected'] = G.copy()
 
 #%%
 #Grow citation graph including external citations
@@ -68,7 +71,7 @@ for i, n_max in enumerate([300,1000,3000,10000]):
     G = trim_graph(G, n_max)
 
     G = nu.citation.trim_connected_components(G, 1)
-    all_Gs['Growth Round {}'.format(i)] = G.copy()
+    all_Gs['Growth Round {}, max {}'.format(i, n_max)] = G.copy()
 
 
 G = set_round(G, i+1)
@@ -87,12 +90,12 @@ forceatlas2 = ForceAtlas2()
 #%%
 
 
-fig, axes = plt.subplots(1,len(all_Gs), figsize=(15,5))
+fig, axes = plt.subplots(1,len(all_Gs), figsize=(5*len(all_Gs),5))
 
 for i, round in enumerate(all_Gs.index):
     G_plot = all_Gs[round]
     # pos = nx.spring_layout(G_plot)
-    pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=5)
+    pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=50)
     nx.draw_networkx_nodes(G_plot, pos, ax=axes[i], node_size=10)
     nx.draw_networkx_edges(G_plot, pos, ax=axes[i],width=0.1)
 
@@ -111,7 +114,7 @@ from bokeh.palettes import Spectral4, Spectral6
 
 cmap = Spectral6
 
-rounds_plot = [0,1,2,3,4]
+rounds_plot = [0,1,2,3,4,5]
 nodes_plot = [node for node in G.nodes if G.nodes[node]['round'] in rounds_plot]
 G_plot = G.subgraph(nodes_plot)
 G_plot = nx.Graph(G_plot)
@@ -138,7 +141,7 @@ for node in G_plot.nodes:
     G_plot.nodes[node]['cit_round'] = cmap[G_plot.nodes[node]['round']]
 
 
-pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=10)
+pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=50)
 source = ColumnDataSource(dict(
 x = [pos[key][0] for key in pos.keys()],
 y = [pos[key][1] for key in pos.keys()],

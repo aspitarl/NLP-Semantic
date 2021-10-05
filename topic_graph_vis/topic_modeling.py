@@ -65,7 +65,7 @@ pipeline = Pipeline([
 X = pipeline.fit_transform(texts)
 feature_names = pipeline['vectorizer'].get_feature_names()
 
-topic_model = ct.Corex(n_hidden=30, seed=42)  # Define the number of latent (hidden) topics to use.
+topic_model = ct.Corex(n_hidden=50, seed=42)  # Define the number of latent (hidden) topics to use.
 topic_model.fit(X, words=feature_names, docs=docs.index, anchors=corex_anchors, anchor_strength=5)
 
 import _pickle as cPickle
@@ -88,9 +88,14 @@ highlight_topics = ['topic_' + str(i) for i in range(len(corex_anchors))]
 year_range_fit = slice(2015,2020)
 year_range_plot = slice(1990,2020)
 
-nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=30, highlight_topics=highlight_topics)
+nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=10, highlight_topics=highlight_topics)
 
 plt.savefig('output/top_slopes_plot.png')
+
+
+nu.plot.top_slopes_plot(df_topicsyear.loc[year_range_plot], s_topic_words, year_range_fit, n_plots=10, highlight_topics=highlight_topics,ascending=True)
+
+plt.savefig('output/neg_slopes_plot.png')
 
 
 

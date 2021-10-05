@@ -87,7 +87,7 @@ from bokeh.plotting import figure, show, from_networkx, save
 from bokeh.palettes import Colorblind3, Colorblind4, Colorblind5, Colorblind6, Colorblind7
 from bokeh.layouts import column, row, layout
 
-intro_text = Div(text="""<h1>Topic Modeling graph visualization</h1><br>
+intro_text = Div(text="""
 <h2> Graph Key: </h2>
 <h3> Each node represents a topic and each edge between two topics represents the likelihood of the two topics appearing in an abstract together.<br>
 <b>NODE COLOR:</b> community assigned by the Louvain community detection algorithm.<br>
@@ -583,8 +583,8 @@ layout =  column(
     intro_text,
     row(plot, column(topic_words_list, row(text_top_papers_topic, text_top_papers_6_10), column(topic_words_list_2, row(top_papers_topic_2, top_papers_6_10_2)))), 
     row(column(table_text, data_table), column(trend_text, plot_trend)),
-    group_text, 
-    row(group_plot, column(group_words_list, group_plot_trend))
+    # group_text, 
+    # row(group_plot, column(group_words_list, group_plot_trend))
     )
 
 #%%
