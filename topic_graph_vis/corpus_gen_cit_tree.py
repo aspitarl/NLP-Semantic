@@ -90,12 +90,12 @@ forceatlas2 = ForceAtlas2()
 #%%
 
 
-fig, axes = plt.subplots(1,len(all_Gs), figsize=(5*len(all_Gs),5))
+fig, axes = plt.subplots(1,len(all_Gs), figsize=(3.5*len(all_Gs),4))
 
 for i, round in enumerate(all_Gs.index):
     G_plot = all_Gs[round]
     # pos = nx.spring_layout(G_plot)
-    pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=50)
+    pos = forceatlas2.forceatlas2_networkx_layout(G_plot, pos=None, iterations=25)
     nx.draw_networkx_nodes(G_plot, pos, ax=axes[i], node_size=10)
     nx.draw_networkx_edges(G_plot, pos, ax=axes[i],width=0.1)
 
