@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from nlp_utils.io import load_df_semantic, get_column_as_list
+from nlp_utils.fileio import load_df_semantic, get_column_as_list
 
 def get_citation(con, paper_id, field='inbound_citations'):
 

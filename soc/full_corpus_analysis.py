@@ -86,7 +86,7 @@ results = cursor.fetchall()
 ids = [t[0] for t in results]
 #%%
 
-from nlp_utils.io import load_df_semantic
+from nlp_utils.fileio import load_df_semantic
 
 df = load_df_semantic(con, ids)
 

@@ -8,7 +8,7 @@ import sqlite3
 import networkx as nx
 
 import matplotlib.pyplot as plt
-from nlp_utils.io import load_df_semantic
+from nlp_utils.fileio import load_df_semantic
 import nlp_utils as nu
 
 from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_citation_info, trim_graph_inCits, trim_graph_num_edges, trim_graph_size

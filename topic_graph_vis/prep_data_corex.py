@@ -11,7 +11,7 @@ import sys
 import matplotlib.pyplot as plt 
 from gensim.models import LdaModel
 from nlp_utils import gensim_utils, sklearn_utils, io
-from nlp_utils.io import load_df_semantic
+from nlp_utils.fileio import load_df_semantic
 
 import _pickle as cPickle
 

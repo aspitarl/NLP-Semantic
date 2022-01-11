@@ -9,7 +9,7 @@ import gensim
 import matplotlib.pyplot as plt
 import sqlite3
 
-from nlp_utils.io import load_df_semantic, get_column_as_list
+from nlp_utils.fileio import load_df_semantic, get_column_as_list
 
 DATASET_DIR = r'C:\Users\aspit\Git\NLP-Semantic\datasets'
 db_path = os.path.join(DATASET_DIR, 'db_s2orc.db')

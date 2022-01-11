@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import _pickle as cPickle
 import matplotlib.pyplot as plt
-from nlp_utils.io import load_df_semantic
+from nlp_utils.fileio import load_df_semantic
 import nlp_utils as nu
 
 from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_frac_connected, trim_graph_size
