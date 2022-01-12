@@ -25,7 +25,7 @@ con = sqlite3.connect(db_path)
 all_dois = pd.read_csv('data/tech_doi.csv')
 input_dois = all_dois['general'].dropna()
 
-df = nu.io.load_df_semantic(con, input_dois, cust_idx_name='doi')
+df = nu.fileio.load_df_semantic(con, input_dois, cust_idx_name='doi')
 
 for doi in input_dois:
     if doi not in df['doi'].values:

@@ -10,7 +10,7 @@ import os
 import sys
 import matplotlib.pyplot as plt 
 from gensim.models import LdaModel
-from nlp_utils import gensim_utils, sklearn_utils, io
+from nlp_utils import gensim_utils, sklearn_utils, fileio
 from nlp_utils.fileio import load_df_semantic
 
 import _pickle as cPickle
@@ -24,7 +24,7 @@ con = sqlite3.connect(os.path.join(db_folder, 'soc.db'))
 cursor = con.cursor()
 
 df = load_df_semantic(con, topic_model.docs.values)
-df = df.rename({'year': 'Year', 's2Url': 'url'}, axis=1)
+df = df.rename({'year': 'Year', 's2Url': 'display_url'}, axis=1)
 df['inCitations'] = df['inCitations'].apply(",".join)
 df_tm = df
 
@@ -71,7 +71,7 @@ for topic in df_doc_topic_probs.columns:
         # idx = str(idx)
 
         linkstr = df['title'][idx] + " (" + str(df['Year'][idx]) + ")"
-        text += " <a href=" + df['url'][idx] + ">" + linkstr + "</a><br>"
+        text += " <a href=" + df['display_url'][idx] + ">" + linkstr + "</a><br>"
         text += " (topic prob: {:0.1f}%)".format(prob*100)
         text += " (# citations {:})".format(len(df['inCitations'][idx].split(',')))
         text += " <br><br> "
@@ -89,7 +89,7 @@ for topic in df_doc_topic_probs.columns:
         prob = top_papers[idx]
 
         linkstr = df['title'][idx] + " (" + str(df['Year'][idx]) + ")"
-        text += " <a href=" + df['url'][idx] + ">" + linkstr + "</a><br>"
+        text += " <a href=" + df['display_url'][idx] + ">" + linkstr + "</a><br>"
         text += " (topic prob: {:0.1f}%)".format(prob*100)
         text += " (# citations {:})".format(len(df['inCitations'][idx].split(',')))
         text += " <br><br> "
@@ -118,7 +118,7 @@ for edge in df_doc_edge_probs.columns:
         prob = top_papers[idx]
 
         linkstr = df['title'][idx] + " (" + str(df['Year'][idx]) + ")"
-        text += " <a href=" + df['url'][idx] + ">" + linkstr + "</a><br>"
+        text += " <a href=" + df['display_url'][idx] + ">" + linkstr + "</a><br>"
         text += " (topic prob: {:0.1f}%)".format(prob*100)
         text += " (# citations {:})".format(len(df['inCitations'][idx].split(',')))
         text += "<br><br> "
@@ -134,7 +134,7 @@ for edge in df_doc_edge_probs.columns:
         prob = top_papers[idx]
         
         linkstr = df['title'][idx] + " (" + str(df['Year'][idx]) + ")"
-        text += " <a href=" + df['url'][idx] + ">" + linkstr + "</a><br>"
+        text += " <a href=" + df['display_url'][idx] + ">" + linkstr + "</a><br>"
         text += " (topic prob: {:0.1f}%)".format(prob*100)
         text += " (# citations {:})".format(len(df['inCitations'][idx].split(',')))
         text += "<br><br> "

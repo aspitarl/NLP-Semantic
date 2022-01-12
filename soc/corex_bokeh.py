@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 from nlp_utils.fileio import load_df_semantic
 import nlp_utils as nu
 
-from nlp_utils.citation import gen_citation_tree, trim_graph_fraction, get_frac_connected, trim_graph_size
 from nlp_utils.corex_utils import calc_cov_corex, get_s_topic_words
 # db_folder = r'/media/lee/Shared Storage'
 db_folder = r'E:\\'

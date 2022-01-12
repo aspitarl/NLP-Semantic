@@ -30,7 +30,7 @@ def set_round(G, round):
     return G
 
 regex = '%geographic information system%'
-ids = nu.io.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(25e6), output_limit=10000)
+ids = nu.fileio.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(25e6), output_limit=10000)
 
 #%%
 

@@ -31,7 +31,7 @@ all_ids = []
 for regex in regexes:
 
     print('Searching for regex: ' + regex)
-    ids = nu.io.gen_ids_searchterm(con, regex, idx_name='paper_id', search_fields=['abstract', 'title'], search_limit=int(1e5))
+    ids = nu.fileio.gen_ids_searchterm(con, regex, idx_name='paper_id', search_fields=['abstract', 'title'], search_limit=int(1e5))
     all_ids.append(ids)
 
 
