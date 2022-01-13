@@ -35,5 +35,5 @@ G = trim_graph_size(G,100000)
 G = get_citation_info(G, con)
 G = nu.citation.trim_graph_fraction(G, 50000)
 
-nx.write_gexf(G, os.path.join('data','G_cit_tree.gexf'))
+nx.write_gexf(G, os.path.join('graphs','G_cit_tree.gexf'))
 # %%

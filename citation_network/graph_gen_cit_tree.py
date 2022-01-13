@@ -82,7 +82,7 @@ df = load_df_semantic(con, G.nodes)
 print("removing nodes not in database")
 G.remove_nodes_from([id for id in G.nodes if id not in df.index])
 
-nx.write_gexf(G, os.path.join('data','G_cit_tree.gexf'))
+nx.write_gexf(G, os.path.join('graphs','G_cit_tree.gexf'))
 #%%
 
 from fa2 import ForceAtlas2

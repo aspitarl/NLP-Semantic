@@ -103,6 +103,6 @@ for Gsub in Gsubs:
 G_final = nx.Graph()
 G_final.add_nodes_from(set(all_nodes))
 
-nx.write_gexf(G, os.path.join('data','G_cit_tree.gexf'))
+nx.write_gexf(G, os.path.join('graphs','G_cit_tree.gexf'))
 
 #%%
