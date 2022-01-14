@@ -29,9 +29,11 @@ def set_round(G, round):
             G.nodes[node]['round'] = round
     return G
 
-regex = '%geographic information system%'
-ids = nu.fileio.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(25e6), output_limit=10000)
-
+# regex = '%geographic information system%'
+# ids = nu.fileio.gen_ids_searchterm(con, regex, idx_name='id', search_fields=['paperAbstract', 'title'], search_limit=int(25e6), output_limit=10000)
+ids = pd.read_csv(r'C:\Users\aspit\Git\NLP\SciLitNLP\data_wrangling\semantic\text_analysis\data\indexed_searches.csv')['%energy storage%']
+ids = ids.iloc[0:10000]
+ids
 #%%
 
 def trim_graph(G, n_max):

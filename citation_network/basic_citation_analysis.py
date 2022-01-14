@@ -137,29 +137,5 @@ df_keep
 
 #%%
 
-from nlp_utils.text_process import TextNormalizer
 
-from nlp_utils.text_analysis import top_words
-
-df_tm = df
-
-# The text we will analyze is words in both the title and abstract concatenated. 
-docs = df_tm['title'] + ' ' + df_tm['paperAbstract']
-texts = docs.apply(str.split)
-
-text_normalizer = TextNormalizer()
-texts_out = list(text_normalizer.transform(texts))
-
-
-# %%
-texts_out
-
-tw = top_words(texts_out,-1)
-
-tw_word = [t[0] for t in tw]
-tw_count = [t[1] for t in tw]
-
-tw = pd.Series(tw_count, tw_word)
-
-tw.to_csv('data/gen_literature_top_words.csv')
 # %%
